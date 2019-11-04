@@ -18,3 +18,4 @@
 .Spotlight-V100
 .Trashes
 config.yaml
+*_test.go

@@ -2,10 +2,11 @@ package tuner
 
 import (
 	"encoding/json"
+	"io/ioutil"
+
 	validation "github.com/go-ozzo/ozzo-validation"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
-	"io/ioutil"
 )
 
 type Extension int8
@@ -21,18 +22,18 @@ type FileTuner interface {
 }
 
 func NewFileTuner(path string) (FileTuner, error) {
-	fileTuner :=  &fileTuner{
-		path:path,
+	fileTuner := &fileTuner{
+		path: path,
 	}
 	if err := fileTuner.Validate(); err != nil {
-		return nil, errors.Wrap(err,"failed to validate input parameters")
+		return nil, errors.Wrap(err, "failed to validate input parameters")
 	}
 
 	return fileTuner, nil
 }
 
 type fileTuner struct {
-	path string
+	path    string
 	rawFile []byte
 }
 
@@ -46,8 +47,8 @@ func (r *fileTuner) Read() error {
 	return nil
 }
 
-func (r *fileTuner) Validate() error {
-	return validation.ValidateStruct(r,
+func (r fileTuner) Validate() error {
+	return validation.ValidateStruct(&r,
 		validation.Field(&r.path, validation.Required),
 	)
 }
@@ -56,14 +57,14 @@ func (r fileTuner) Unmarshal(target interface{}, extension Extension) error {
 	switch extension {
 	case Yaml:
 		if err := yaml.Unmarshal(r.rawFile, &target); err != nil {
-			return errors.Errorf("failed to unmarshal %s", Yaml)
+			return errors.Errorf("failed to unmarshal %d", Yaml)
 		}
 	case Json:
 		if err := json.Unmarshal(r.rawFile, &target); err != nil {
-			return errors.Errorf("failed to unmarshal %s", Json)
+			return errors.Errorf("failed to unmarshal %d", Json)
 		}
 	default:
-		return errors.Errorf("wrong extension: %s", extension)
+		return errors.Errorf("wrong extension: %d", extension)
 	}
 
 	return nil

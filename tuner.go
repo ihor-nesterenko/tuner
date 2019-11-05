@@ -20,6 +20,10 @@ func NewTuner() Tuner {
 }
 
 func (d defaultTuner) Read(target interface{}) error {
+	if !isPointer(target) {
+		return errors.New("target struct must be a pointer")
+	}
+
 	err := d.fileTuner.Read(target)
 	if err != nil {
 		return errors.Wrap(err, "failed to read config from file")
@@ -34,6 +38,8 @@ func (d defaultTuner) Read(target interface{}) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to read config from vault")
 	}
+
+	return nil
 }
 
 func (d *defaultTuner) FromVault(vaultCfg VaultConfig) error {

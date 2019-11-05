@@ -135,9 +135,6 @@ func (v vaultTuner) getSecrets() (map[string]interface{}, error) {
 }
 
 func unmarshal(source map[string]interface{}, target interface{}) error {
-	if !isPointer(target) {
-		return errors.New("target struct must be a pointer")
-	}
 	if len(source) == 0 {
 		return nil
 	}
@@ -163,10 +160,6 @@ func unmarshal(source map[string]interface{}, target interface{}) error {
 	}
 
 	return nil
-}
-
-func isPointer(i interface{}) bool {
-	return reflect.ValueOf(i).Kind() == reflect.Ptr
 }
 
 func setField(targetKind reflect.Kind, targetValue reflect.Value, value interface{}) error {

@@ -3,30 +3,24 @@ package tuner
 import (
 	"encoding/json"
 	"io/ioutil"
+	"strings"
 
-	validation "github.com/go-ozzo/ozzo-validation"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )
 
-type Extension int8
-
 const (
-	Yaml Extension = iota
-	Json
+	yamlExt = "yaml"
+	jsonExt = "json"
 )
 
-type FileTuner interface {
-	Read() error
-	Unmarshal(target interface{}, extension Extension) error
-}
+func NewFileTuner(path string) (Reader, error) {
+	if path == "" {
+		return nil, errors.New("path must not be empty")
+	}
 
-func NewFileTuner(path string) (FileTuner, error) {
 	fileTuner := &fileTuner{
 		path: path,
-	}
-	if err := fileTuner.Validate(); err != nil {
-		return nil, errors.Wrap(err, "failed to validate input parameters")
 	}
 
 	return fileTuner, nil
@@ -37,35 +31,42 @@ type fileTuner struct {
 	rawFile []byte
 }
 
-func (r *fileTuner) Read() error {
+func (r *fileTuner) Read(target interface{}) error {
+	if !isPointer(target) {
+		return errors.New("target struct must be a pointer")
+	}
+
 	file, err := ioutil.ReadFile(r.path)
 	if err != nil {
 		return errors.Wrapf(err, "failed to read file with path=%s", r.path)
 	}
 
-	r.rawFile = file
+	err = r.unmarshal(file, target)
+	if err != nil {
+		return errors.Wrapf(err, "failed to unmarshal cfg file to target")
+	}
 	return nil
 }
 
-func (r fileTuner) Validate() error {
-	return validation.ValidateStruct(&r,
-		validation.Field(&r.path, validation.Required),
-	)
-}
+func (r fileTuner) unmarshal(source []byte, target interface{}) error {
 
-func (r fileTuner) Unmarshal(target interface{}, extension Extension) error {
-	switch extension {
-	case Yaml:
+	switch ext := r.getExtension(); ext {
+	case yamlExt:
 		if err := yaml.Unmarshal(r.rawFile, &target); err != nil {
-			return errors.Errorf("failed to unmarshal %d", Yaml)
+			return errors.Errorf("failed to unmarshal file into yaml")
 		}
-	case Json:
+	case jsonExt:
 		if err := json.Unmarshal(r.rawFile, &target); err != nil {
-			return errors.Errorf("failed to unmarshal %d", Json)
+			return errors.Errorf("failed to unmarshal file into json")
 		}
 	default:
-		return errors.Errorf("wrong extension: %d", extension)
+		return errors.Errorf("wrong extension: %s", ext)
 	}
 
 	return nil
+}
+
+func (r fileTuner) getExtension() string {
+	pathSplitted := strings.Split(r.path, ".")
+	return pathSplitted[len(pathSplitted)-1]
 }

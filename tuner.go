@@ -19,27 +19,34 @@ func NewTuner() Tuner {
 	return new(defaultTuner)
 }
 
-func (d defaultTuner) Read(target interface{}) error {
+func (d defaultTuner) Read(target interface{}) (err error) {
 	if !isPointer(target) {
 		return errors.New("target struct must be a pointer")
 	}
 
-	err := d.fileTuner.Read(target)
-	if err != nil {
-		return errors.Wrap(err, "failed to read config from file")
+	if d.fileTuner != nil {
+		err = d.fileTuner.Read(target)
+		if err != nil {
+			return errors.Wrap(err, "failed to read config from file")
+		}
 	}
 
-	err = d.envTuner.Read(target)
-	if err != nil {
-		return errors.Wrap(err, "failed to read config from environment")
+	if d.envTuner != nil {
+		err = d.envTuner.Read(target)
+		if err != nil {
+			return errors.Wrap(err, "failed to read config from environment")
+		}
+
 	}
 
-	err = d.vaultTuner.Read(target)
-	if err != nil {
-		return errors.Wrap(err, "failed to read config from vault")
+	if d.vaultTuner != nil {
+		err = d.vaultTuner.Read(target)
+		if err != nil {
+			return errors.Wrap(err, "failed to read config from vault")
+		}
 	}
 
-	return nil
+	return
 }
 
 func (d *defaultTuner) FromVault(vaultCfg VaultConfig) error {

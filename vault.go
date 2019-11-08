@@ -171,7 +171,6 @@ func unmarshal(source map[string]interface{}, target interface{}) error {
 
 func setField(targetKind reflect.Kind, targetValue reflect.Value, value interface{}) error {
 	//TODO: finish for all types
-	//TODO: must return error if int/float value > than targetKind
 	switch targetKind {
 	case reflect.String:
 		res, ok := value.(string)

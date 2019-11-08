@@ -6,5 +6,6 @@ require (
 	github.com/caarlos0/env/v6 v6.1.0
 	github.com/hashicorp/vault/api v1.0.4
 	github.com/pkg/errors v0.8.1
+	github.com/stretchr/testify v1.4.0
 	gopkg.in/yaml.v2 v2.2.5
 )

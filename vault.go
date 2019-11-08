@@ -2,6 +2,8 @@ package tuner
 
 import (
 	"encoding/json"
+	"math"
+	"math/bits"
 	"reflect"
 	"time"
 
@@ -10,6 +12,11 @@ import (
 )
 
 const vaultTag = "vault"
+
+const (
+	maxInt = 1<<(bits.UintSize-1) - 1
+	minInt = -maxInt - 1
+)
 
 // VaultConfig is used to read secrets from Vault into given struct
 type VaultConfig struct {
@@ -178,14 +185,49 @@ func setField(targetKind reflect.Kind, targetValue reflect.Value, value interfac
 			return errors.New("failed to convert value to bool")
 		}
 		targetValue.SetBool(res)
+
 	case reflect.Int:
-		fallthrough
+		res, err := valueToInt64(value)
+		if err != nil {
+			return errors.Wrap(err, "failed to convert value to int64")
+		}
+
+		if res < minInt || res > maxInt {
+			return errors.New("value is bigger than int8 field size")
+		}
+		targetValue.SetInt(res)
+
 	case reflect.Int8:
-		fallthrough
+		res, err := valueToInt64(value)
+		if err != nil {
+			return errors.Wrap(err, "failed to convert value to int64")
+		}
+
+		if res < math.MinInt8 || res > math.MaxInt8 {
+			return errors.New("value is bigger than int8 field size")
+		}
+		targetValue.SetInt(res)
+
 	case reflect.Int16:
-		fallthrough
+		res, err := valueToInt64(value)
+		if err != nil {
+			return errors.Wrap(err, "failed to convert value to int64")
+		}
+		if res < math.MinInt16 || res > math.MaxInt16 {
+			return errors.New("value is bigger than int8 field size")
+		}
+		targetValue.SetInt(res)
+
 	case reflect.Int32:
-		fallthrough
+		res, err := valueToInt64(value)
+		if err != nil {
+			return errors.Wrap(err, "failed to convert value to int64")
+		}
+		if res < math.MinInt32 || res > math.MaxInt32 {
+			return errors.New("value is bigger than int8 field size")
+		}
+		targetValue.SetInt(res)
+
 	case reflect.Int64:
 		raw, ok := value.(json.Number)
 		if !ok {
@@ -197,15 +239,20 @@ func setField(targetKind reflect.Kind, targetValue reflect.Value, value interfac
 		}
 		targetValue.SetInt(res)
 	case reflect.Float32:
-		fallthrough
-	case reflect.Float64:
-		raw, ok := value.(json.Number)
-		if !ok {
-			return errors.New("failed to convert value to json.Number")
-		}
-		res, err := raw.Float64()
+		res, err := valueToFloat64(value)
 		if err != nil {
-			return errors.New("failed to convert json.Number to float64")
+			return errors.Wrap(err, "failed to convert value to float64")
+		}
+
+		if res < -math.MaxFloat32 || res > math.MaxFloat32 {
+			return errors.New("value is bigger than int8 field size")
+		}
+		targetValue.SetFloat(res)
+
+	case reflect.Float64:
+		res, err := valueToFloat64(value)
+		if err != nil {
+			return errors.Wrap(err, "failed to convert value to float64")
 		}
 		targetValue.SetFloat(res)
 	default:
@@ -213,4 +260,30 @@ func setField(targetKind reflect.Kind, targetValue reflect.Value, value interfac
 	}
 
 	return nil
+}
+
+func valueToInt64(value interface{}) (int64, error) {
+	raw, ok := value.(json.Number)
+	if !ok {
+		return 0, errors.New("failed to convert value to json.Number")
+	}
+	res, err := raw.Int64()
+	if err != nil {
+		return 0, errors.New("failed to convert json.Number to int64")
+	}
+
+	return res, nil
+}
+
+func valueToFloat64(value interface{}) (float64, error) {
+	raw, ok := value.(json.Number)
+	if !ok {
+		return 0, errors.New("failed to convert value to json.Number")
+	}
+	res, err := raw.Float64()
+	if err != nil {
+		return 0, errors.New("failed to convert json.Number to float64")
+	}
+
+	return res, nil
 }
